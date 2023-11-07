@@ -33,9 +33,31 @@ class FFNN(nn.Module):
     def forward(self, input_vector):
         # [to fill] obtain first hidden layer representation
 
+        h1_Z = self.W1(input_vector)
+        h1_Output = self.activation(h1_Z)
+
+        # print("THIS IS THE INPUT_VECTOR")
+        # print(input_vector)
+        # print(type(input_vector))
+        # print(input_vector.size())
+
+        # print("h: ", self.h)
+        # print("w1: ", self.W1)
+        # print("activation: ", self.activation)
+        # print("w2: ", self.W2)
+
+
         # [to fill] obtain output layer representation
 
+        h2_Z = self.W2(h1_Output)
+
         # [to fill] obtain probability dist.
+        h2_Output = self.softmax(h2_Z)
+
+        predicted_vector = h2_Output
+
+        """pytorch tutorial follow it for backpropagation
+        use autograd"""
 
         return predicted_vector
 
@@ -89,9 +111,13 @@ def load_data(train_data, val_data):
     tra = []
     val = []
     for elt in training:
-        tra.append((elt["text"].split(),int(elt["stars"]-1)))
+        # print(elt["stars"]-1)
+        # tra.append((elt["text"].split(),int(elt["stars"]-1)))
+        tra.append((elt["text"].split(),int(elt["stars"])))
+
     for elt in validation:
-        val.append((elt["text"].split(),int(elt["stars"]-1)))
+        # val.append((elt["text"].split(),int(elt["stars"]-1)))
+        val.append((elt["text"].split(),int(elt["stars"])))
 
     return tra, val
 
@@ -134,13 +160,20 @@ if __name__ == "__main__":
         print("Training started for epoch {}".format(epoch + 1))
         random.shuffle(train_data) # Good practice to shuffle order of training data
         minibatch_size = 16 
+        # minibatch_size = 6
+        # minibatch_size = 2
+
+
         N = len(train_data) 
         for minibatch_index in tqdm(range(N // minibatch_size)):
             optimizer.zero_grad()
             loss = None
             for example_index in range(minibatch_size):
                 input_vector, gold_label = train_data[minibatch_index * minibatch_size + example_index]
+                # print("input_vector")
+                # print(input_vector)
                 predicted_vector = model(input_vector)
+                # predicted_vector = model.forward(input_vector)      #JESUS Added
                 predicted_label = torch.argmax(predicted_vector)
                 correct += int(predicted_label == gold_label)
                 total += 1
@@ -163,6 +196,8 @@ if __name__ == "__main__":
         start_time = time.time()
         print("Validation started for epoch {}".format(epoch + 1))
         minibatch_size = 16 
+        # minibatch_size = 2
+
         N = len(valid_data) 
         for minibatch_index in tqdm(range(N // minibatch_size)):
             optimizer.zero_grad()
