@@ -31,12 +31,39 @@ class RNN(nn.Module):
 
     def forward(self, inputs):
         # [to fill] obtain hidden layer representation (https://pytorch.org/docs/stable/generated/torch.nn.RNN.html)
-        _, hidden = 
+
+        # print("THIS IS THE INPUT_VECTOR")
+        # print(inputs)
+        # print(type(inputs))
+        # print("input: ", inputs.size())
+        _, hidden = self.rnn(inputs)
+
+        # print("output: ", _.size())
+        # # print(_)
+        # print("hidden: ", hidden.size())
+        # print(hidden)
         # [to fill] obtain output layer representations
+
+        output_layer_rep = self.W(_)
+        # print()
+        # print("output_layer_rep: ", output_layer_rep.size())
+        # print(output_layer_rep)
+        # print()
 
         # [to fill] sum over output 
 
+        sum_output = torch.sum(output_layer_rep, 0)
+        # print("sum_output: ", sum_output.size())
+        # print(sum_output)
+
         # [to fill] obtain probability dist.
+
+        output_prob_dist = self.softmax(sum_output)
+
+        # print("output_prob_dist: ", output_prob_dist.size())
+        # print(output_prob_dist)
+
+        predicted_vector = output_prob_dist
 
         return predicted_vector
 
@@ -80,7 +107,9 @@ if __name__ == "__main__":
     model = RNN(50, args.hidden_dim)  # Fill in parameters
     # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    word_embedding = pickle.load(open('./word_embedding.pkl', 'rb'))
+    # word_embedding = pickle.load(open('./word_embedding.pkl', 'rb')) 
+    word_embedding = pickle.load(open('./Data_Embedding/word_embedding.pkl', 'rb')) 
+
 
     stopping_condition = False
     epoch = 0
@@ -96,7 +125,9 @@ if __name__ == "__main__":
         train_data = train_data
         correct = 0
         total = 0
-        minibatch_size = 16
+        # minibatch_size = 16
+        minibatch_size = 1
+
         N = len(train_data)
 
         loss_total = 0
