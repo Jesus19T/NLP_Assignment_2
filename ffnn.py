@@ -32,10 +32,16 @@ class FFNN(nn.Module):
 
     def forward(self, input_vector):
         # [to fill] obtain first hidden layer representation
+        h1_Z = self.W1(input_vector)
+        h1_Output = self.activation(h1_Z)
 
         # [to fill] obtain output layer representation
+        h2_Z = self.W2(h1_Output)
 
         # [to fill] obtain probability dist.
+        h2_Output = self.softmax(h2_Z)
+
+        predicted_vector = h2_Output
 
         return predicted_vector
 
@@ -89,9 +95,13 @@ def load_data(train_data, val_data):
     tra = []
     val = []
     for elt in training:
-        tra.append((elt["text"].split(),int(elt["stars"]-1)))
+        # print(elt["stars"]-1)
+        # tra.append((elt["text"].split(),int(elt["stars"]-1)))
+        tra.append((elt["text"].split(),int(elt["stars"])))
+
     for elt in validation:
-        val.append((elt["text"].split(),int(elt["stars"]-1)))
+        # val.append((elt["text"].split(),int(elt["stars"]-1)))
+        val.append((elt["text"].split(),int(elt["stars"])))
 
     return tra, val
 
@@ -120,6 +130,11 @@ if __name__ == "__main__":
     train_data = convert_to_vector_representation(train_data, word2index)
     valid_data = convert_to_vector_representation(valid_data, word2index)
     
+    training_epoch_loss = []
+    validation_epoch_loss = []
+
+    training_epoch_accuracy = []
+    validation_epoch_accuracy = []
 
     model = FFNN(input_dim = len(vocab), h = args.hidden_dim)
     optimizer = optim.SGD(model.parameters(),lr=0.01, momentum=0.9)
@@ -134,13 +149,21 @@ if __name__ == "__main__":
         print("Training started for epoch {}".format(epoch + 1))
         random.shuffle(train_data) # Good practice to shuffle order of training data
         minibatch_size = 16 
+        # minibatch_size = 6
+        # minibatch_size = 2
+
+        training_minibatch_loss = []
+
         N = len(train_data) 
         for minibatch_index in tqdm(range(N // minibatch_size)):
             optimizer.zero_grad()
             loss = None
             for example_index in range(minibatch_size):
                 input_vector, gold_label = train_data[minibatch_index * minibatch_size + example_index]
+                # print("input_vector")
+                # print(input_vector)
                 predicted_vector = model(input_vector)
+                # predicted_vector = model.forward(input_vector)      #JESUS Added
                 predicted_label = torch.argmax(predicted_vector)
                 correct += int(predicted_label == gold_label)
                 total += 1
@@ -150,8 +173,12 @@ if __name__ == "__main__":
                 else:
                     loss += example_loss
             loss = loss / minibatch_size
+            training_minibatch_loss.append(loss.data)
             loss.backward()
             optimizer.step()
+            
+        training_epoch_loss.append(np.array(training_minibatch_loss).mean())
+        training_epoch_accuracy.append(correct / total)
         print("Training completed for epoch {}".format(epoch + 1))
         print("Training accuracy for epoch {}: {}".format(epoch + 1, correct / total))
         print("Training time for this epoch: {}".format(time.time() - start_time))
@@ -163,6 +190,10 @@ if __name__ == "__main__":
         start_time = time.time()
         print("Validation started for epoch {}".format(epoch + 1))
         minibatch_size = 16 
+        # minibatch_size = 2
+
+        validation_minibatch_loss = []
+
         N = len(valid_data) 
         for minibatch_index in tqdm(range(N // minibatch_size)):
             optimizer.zero_grad()
@@ -171,6 +202,15 @@ if __name__ == "__main__":
                 input_vector, gold_label = valid_data[minibatch_index * minibatch_size + example_index]
                 predicted_vector = model(input_vector)
                 predicted_label = torch.argmax(predicted_vector)
+                if gold_label == 3:
+                    print("#############")
+                    print(input_vector)
+                    print("predicted_label", predicted_label)
+                    if(predicted_label == gold_label):
+                        print("Correct")
+                    else:
+                        print("Wrong")
+
                 correct += int(predicted_label == gold_label)
                 total += 1
                 example_loss = model.compute_Loss(predicted_vector.view(1,-1), torch.tensor([gold_label]))
@@ -179,9 +219,36 @@ if __name__ == "__main__":
                 else:
                     loss += example_loss
             loss = loss / minibatch_size
+            validation_minibatch_loss.append(loss.data)
+        validation_epoch_loss.append(np.array(validation_minibatch_loss).mean())
+        validation_epoch_accuracy.append(correct / total)
         print("Validation completed for epoch {}".format(epoch + 1))
         print("Validation accuracy for epoch {}: {}".format(epoch + 1, correct / total))
         print("Validation time for this epoch: {}".format(time.time() - start_time))
 
     # write out to results/test.out
+
+    #plot loss 
+    from matplotlib import pyplot as plt
+    plt.figure(1)
+    plt.plot(training_epoch_loss, label='train_loss')
+    plt.plot(validation_epoch_loss,label='val_loss')
+    plt.title("Training and Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    # plt.xticks(range(1,len(training_epoch_loss)))
+    plt.xticks(np.arange(len(np.array(training_epoch_loss))), np.arange(1, len(np.array(training_epoch_loss))+1))
+    plt.legend()
+
+    plt.figure(2)
+    plt.plot(training_epoch_accuracy, label='train_accuracy')
+    plt.plot(validation_epoch_accuracy,label='val_accuracy')
+    plt.title("Training and Validation Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    # plt.xticks(range(1,len(training_epoch_loss)))
+    plt.xticks(np.arange(len(np.array(training_epoch_accuracy))), np.arange(1, len(np.array(training_epoch_accuracy))+1))
+    plt.legend()
+
+    plt.show()
     
