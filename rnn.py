@@ -17,7 +17,7 @@ unk = '<UNK>'
 # Consult the PyTorch documentation for information on the functions used below:
 # https://pytorch.org/docs/stable/torch.html
 class RNN(nn.Module):
-    def __init__(self, input_dim, h):  # Add relevant parameters
+    def __init__(self, input_dim, h):  # Add relevant parameters                                                        
         super(RNN, self).__init__()
         self.h = h
         self.numOfLayer = 1
@@ -30,38 +30,17 @@ class RNN(nn.Module):
         return self.loss(predicted_vector, gold_label)
 
     def forward(self, inputs):
-        # [to fill] obtain hidden layer representation (https://pytorch.org/docs/stable/generated/torch.nn.RNN.html)
-
-        # print("THIS IS THE INPUT_VECTOR")
-        # print(inputs)
-        # print(type(inputs))
-        # print("input: ", inputs.size())
+        # [to fill] obtain hidden layer representation
         _, hidden = self.rnn(inputs)
 
-        # print("output: ", _.size())
-        # # print(_)
-        # print("hidden: ", hidden.size())
-        # print(hidden)
         # [to fill] obtain output layer representations
-
         output_layer_rep = self.W(_)
-        # print()
-        # print("output_layer_rep: ", output_layer_rep.size())
-        # print(output_layer_rep)
-        # print()
 
         # [to fill] sum over output 
-
         sum_output = torch.sum(output_layer_rep, 0)
-        # print("sum_output: ", sum_output.size())
-        # print(sum_output)
 
         # [to fill] obtain probability dist.
-
         output_prob_dist = self.softmax(sum_output)
-
-        # print("output_prob_dist: ", output_prob_dist.size())
-        # print(output_prob_dist)
 
         predicted_vector = output_prob_dist
 
@@ -117,6 +96,12 @@ if __name__ == "__main__":
     last_train_accuracy = 0
     last_validation_accuracy = 0
 
+    training_epoch_loss = []
+    validation_epoch_loss = []
+
+    training_epoch_accuracy = []
+    validation_epoch_accuracy = []
+
     while not stopping_condition:
         random.shuffle(train_data)
         model.train()
@@ -125,13 +110,16 @@ if __name__ == "__main__":
         train_data = train_data
         correct = 0
         total = 0
-        # minibatch_size = 16
-        minibatch_size = 1
+        minibatch_size = 16
+        # minibatch_size = 1
 
         N = len(train_data)
 
         loss_total = 0
         loss_count = 0
+
+        training_minibatch_loss = []
+
         for minibatch_index in tqdm(range(N // minibatch_size)):
             optimizer.zero_grad()
             loss = None
@@ -166,12 +154,17 @@ if __name__ == "__main__":
             loss = loss / minibatch_size
             loss_total += loss.data
             loss_count += 1
+            training_minibatch_loss.append(loss.data)
+            # training_minibatch_loss.append(loss_total/loss_count)
             loss.backward()
             optimizer.step()
+
+        training_epoch_loss.append(np.array(training_minibatch_loss).mean())
         print(loss_total/loss_count)
         print("Training completed for epoch {}".format(epoch + 1))
         print("Training accuracy for epoch {}: {}".format(epoch + 1, correct / total))
         trainning_accuracy = correct/total
+        training_epoch_accuracy.append(trainning_accuracy)
 
 
         model.eval()
@@ -180,6 +173,8 @@ if __name__ == "__main__":
         random.shuffle(valid_data)
         print("Validation started for epoch {}".format(epoch + 1))
         valid_data = valid_data
+
+        # validation_minibatch_loss = []
 
         for input_words, gold_label in tqdm(valid_data):
             input_words = " ".join(input_words)
@@ -196,6 +191,7 @@ if __name__ == "__main__":
         print("Validation completed for epoch {}".format(epoch + 1))
         print("Validation accuracy for epoch {}: {}".format(epoch + 1, correct / total))
         validation_accuracy = correct/total
+        validation_epoch_accuracy.append(validation_accuracy)
 
         if validation_accuracy < last_validation_accuracy and trainning_accuracy > last_train_accuracy:
             stopping_condition=True
@@ -212,3 +208,23 @@ if __name__ == "__main__":
     # You may find it beneficial to keep track of training accuracy or training loss;
 
     # Think about how to update the model and what this entails. Consider ffnn.py and the PyTorch documentation for guidance
+
+
+    #plot loss 
+    from matplotlib import pyplot as plt
+    plt.figure(1)
+    plt.plot(training_epoch_loss, label='train_loss')
+    # plt.plot(validationEpoch_loss,label='val_loss')
+    plt.title("Training Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+
+    plt.figure(2)
+    plt.plot(training_epoch_accuracy, label='train_accuracy')
+    plt.plot(validation_epoch_accuracy,label='val_accuracy')
+    plt.title("Training and Validation Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.show()
